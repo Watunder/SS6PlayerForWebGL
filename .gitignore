@@ -1,0 +1,8 @@
+_develop/
+
+dist/
+
+libs/ss6player-lib/
+libs/ssfblib/
+
+node_modules/

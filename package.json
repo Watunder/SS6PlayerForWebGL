@@ -1,0 +1,21 @@
+{
+    "type": "module",
+    "name": "ss6player",
+    "version": "0.0.1",
+    "config": {
+        "proxy": "",
+        "token": ""
+    },
+    "main": "./dist/ss6player.js",
+    "scripts": {
+        "install": "cd scripts && node install.js",
+        "postinstall": "cd scripts && node postinstall.js",
+        "build": "npx rollup -c"
+    },
+    "devDependencies": {
+        "@rollup/plugin-replace": "^6.0.2",
+        "diff": "^8.0.2",
+        "down-git": "github:Watunder/DownGit",
+        "rollup": "^4.44.0"
+    }
+}
