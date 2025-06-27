@@ -272,7 +272,7 @@ export class SS6Player {
                             }
                         }
                         currentFrameNo = incFrameNo;
-                        // Check User Data
+                        // check User Data
                         if (this._isPlaying) {
                             if (this.playerLib.HaveUserData(currentFrameNo)) {
                                 if (this.onUserDataCallback !== null) {
@@ -303,7 +303,7 @@ export class SS6Player {
                             }
                         }
                         currentFrameNo = decFrameNo;
-                        // Check User Data
+                        // check User Data
                         if (this._isPlaying) {
                             if (this.playerLib.HaveUserData(currentFrameNo)) {
                                 if (this.onUserDataCallback !== null) {
@@ -338,28 +338,28 @@ export class SS6Player {
         const fd = this.playerLib.GetFrameData(frameNumber);
         this.base.children = [];
 
-        // 優先度順パーツ単位ループ
+        // the parts loop
         const l = fd.length;
         for (let ii = 0; ii < l; ii = (ii + 1) | 0) {
-            // 優先度に変換
+            // the priority order
             const i = this.playerLib.prio2index[ii];
 
             const data = fd[i];
             const origCellID = data.cellIndex;
             const cellID = (this.changeCellID[i] !== -1) ? this.changeCellID[i] : origCellID;
 
-            // cell再利用
+            // reuse the previous one
             let partObject = this.prevPartObject[i];
             const part = this.playerLib.animePackData.parts(i);
             const partType = part.type();
             let overWrite = (this.substituteOverWrite[i] !== null) ? this.substituteOverWrite[i] : false;
             let overWritekeyParam = this.substituteKeyParam[i];
 
-            // 処理分岐処理
+            // handle the initialization
             switch (partType) {
                 case SsPartType.Instance:
                     if (partObject == null) {
-                        partObject = this.MakeCellPlayer(part.refname());
+                        partObject = this.makeCellPlayer(part.refname());
                         partObject.base.name = part.name();
                     }
                     break;
@@ -367,14 +367,14 @@ export class SS6Player {
                 case SsPartType.Mask:
                     if (cellID >= 0 && this.prevCellID[i] !== cellID) {
                         if (partObject != null) partObject = null;
-                        partObject = this.MakeCellMesh(cellID); // (cellID, i)?
+                        partObject = this.makeCellMesh(cellID); // (cellID, i)?
                         partObject.name = part.name();
                     }
                     break;
                 case SsPartType.Mesh:
                     if (cellID >= 0 && this.prevCellID[i] !== cellID) {
                         if (partObject != null) partObject = null;
-                        partObject = this.MakeMeshCellMesh(i, cellID, origCellID);
+                        partObject = this.makeMeshCellMesh(i, cellID, origCellID);
                         partObject.name = part.name();
                     }
                     break;
@@ -388,26 +388,26 @@ export class SS6Player {
                     break;
                 default:
                     if (cellID >= 0 && this.prevCellID[i] !== cellID) {
-                        // 小西 - デストロイ処理
+                        // destory the previous one
                         if (partObject != null) partObject = null;
-                        partObject = this.MakeCellMesh(cellID); // (cellID, i)?
+                        partObject = this.makeCellMesh(cellID); // (cellID, i)?
                         partObject.name = part.name();
                     }
                     break;
             }
 
-            // 初期化が行われなかった場合(あるの？)
+            // not initialized?
             if (partObject == null) continue;
 
             this.prevCellID[i] = cellID;
             this.prevPartObject[i] = partObject;
 
-            // 描画関係処理
+            // handle the updating
             switch (partType) {
                 case SsPartType.Instance: {
                     const instance = partObject instanceof SS6Player ? partObject : null;
 
-                    // インスタンスパーツのアップデート
+                    // update the instance
                     // let pos = new Float32Array(5);
                     this._instancePos[0] = 0; // pos x
                     this._instancePos[1] = 0; // pos x
@@ -426,9 +426,10 @@ export class SS6Player {
                     instance.base.scale.y = this._instancePos[3];
 
                     /* TODO: SS6Player.alpha
-                    let opacity = data.opacity / 255.0; // fdには継承後の不透明度が反映されているのでそのまま使用する
+                    // the inherited opacity from the frame data
+                    let opacity = data.opacity / 255.0;
                     if (data.localopacity < 255) {
-                        // ローカル不透明度が使われている場合は255以下の値になるので、255以下の場合にローカル不透明度で上書き
+                        // overwrite with the local opacity
                         opacity = data.localopacity / 255.0;
                     }
                     instance.alpha = opacity * this.parentAlpha;
@@ -436,7 +437,7 @@ export class SS6Player {
 
                     instance.base.visible = !data.f_hide;
 
-                    // 描画
+                    // the instance attribute
                     let refKeyframe = data.instanceValue_curKeyframe;
                     let refStartframe = data.instanceValue_startFrame;
                     let refEndframe = data.instanceValue_endFrame;
@@ -453,23 +454,19 @@ export class SS6Player {
                     const INSTANCE_LOOP_FLAG_INDEPENDENT = 0b0000000000001000;
                     const lflags = data.instanceValue_loopflag;
                     if (lflags & INSTANCE_LOOP_FLAG_INFINITY) {
-                        // 無限ループ
                         infinity = true;
                     }
                     if (lflags & INSTANCE_LOOP_FLAG_REVERSE) {
-                        // 逆再生
                         reverse = true;
                     }
                     if (lflags & INSTANCE_LOOP_FLAG_PINGPONG) {
-                        // 往復
                         pingpong = true;
                     }
                     if (lflags & INSTANCE_LOOP_FLAG_INDEPENDENT) {
-                        // 独立
                         independent = true;
                     }
 
-                    // インスタンスパラメータを上書きする
+                    // overwrite the instance attribute
                     if (overWrite) {
                         refStartframe = overWritekeyParam.refStartframe;
                         refEndframe = overWritekeyParam.refEndframe;
@@ -482,55 +479,51 @@ export class SS6Player {
                     }
 
                     if (instance._startFrame !== refStartframe || instance._endFrame !== refEndframe) {
-                        instance.SetAnimationSection(refStartframe, refEndframe);
+                        instance.setAnimationSection(refStartframe, refEndframe);
                     }
 
-                    // タイムライン上の時間 （絶対時間）
+                    // the current frame (absolute)
                     let time = frameNumber;
 
-                    // 独立動作の場合
                     if (independent === true) {
                         this.liveFrame[ii] += ds;
                         time = Math.floor(this.liveFrame[ii]);
                     }
 
-                    // このインスタンスが配置されたキーフレーム（絶対時間）
+                    // the keyframe (absolute)
                     const selfTopKeyframe = refKeyframe;
 
-                    let reftime = Math.floor((time - selfTopKeyframe) * refSpeed); // 開始から現在の経過時間
-                    if (reftime < 0) continue; // そもそも生存時間に存在していない
+                    // the elapsed time
+                    let reftime = Math.floor((time - selfTopKeyframe) * refSpeed);
+                    if (reftime < 0) continue;
                     if (selfTopKeyframe > time) continue;
 
-                    const inst_scale = refEndframe - refStartframe + 1; // インスタンスの尺
-
-                    // 尺が０もしくはマイナス（あり得ない
+                    // the duration 
+                    const inst_scale = refEndframe - refStartframe + 1;
                     if (inst_scale <= 0) continue;
-                    let nowloop = Math.floor(reftime / inst_scale); // 現在までのループ数
+
+                    // the loop counts
+                    let nowloop = Math.floor(reftime / inst_scale);
 
                     let checkloopnum = refloopNum;
 
-                    // pingpongの場合では２倍にする
                     if (pingpong) checkloopnum = checkloopnum * 2;
 
-                    // 無限ループで無い時にループ数をチェック
                     if (!infinity) {
-                        // 無限フラグが有効な場合はチェックせず
                         if (nowloop >= checkloopnum) {
                             reftime = inst_scale - 1;
                             nowloop = checkloopnum - 1;
                         }
                     }
 
-                    const temp_frame = Math.floor(reftime % inst_scale); // ループを加味しないインスタンスアニメ内のフレーム
+                    // the exclude frame
+                    const temp_frame = Math.floor(reftime % inst_scale);
 
-                    // 参照位置を決める
-                    // 現在の再生フレームの計算
-                    let _time = 0;
                     if (pingpong && nowloop % 2 === 1) {
                         if (reverse) {
-                            reverse = false; // 反転
+                            reverse = false;
                         } else {
-                            reverse = true; // 反転
+                            reverse = true;
                         }
                     }
 
@@ -538,21 +531,20 @@ export class SS6Player {
                         reverse = !reverse;
                     }
 
+                    // calculate the current frame
+                    let _time = 0;
                     if (reverse) {
-                        // リバースの時
                         _time = refEndframe - temp_frame;
                     } else {
-                        // 通常時
                         _time = temp_frame + refStartframe;
                     }
 
-                    // インスタンスパラメータを設定
-                    // インスタンス用SSPlayerに再生フレームを設定する
-                    instance.SetFrame(Math.floor(_time));
+                    // set the current frame
+                    instance.setFrame(Math.floor(_time));
+
                     this.base.addChild(instance.base);
                     break;
                 }
-                //  Instance以外の通常のMeshと空のContainerで処理分岐
                 case SsPartType.Normal:
                 case SsPartType.Mesh:
                 case SsPartType.Joint:
@@ -561,22 +553,18 @@ export class SS6Player {
                     const cell = this.playerLib.fbObj.cells(cellID);
                     let verts;
                     if (partType === SsPartType.Mesh) {
-                        // ボーンとのバインドの有無によって、TRSの継承行うかが決まる。
                         if (data.meshIsBind === 0) {
-                            // バインドがない場合は親からのTRSを継承する
+                            // inherit the parent's TRS(Translation/Rotation/Scale)
                             verts = this.playerLib.TransformMeshVertsLocal(Player.GetMeshVerts(cell, data, mesh.vertices), data.index, frameNumber);
                         } else {
-                            // バインドがある場合は変形後の結果が出力されているので、そのままの値を使用する
                             verts = Player.GetMeshVerts(cell, data, mesh.vertices);
                         }
                     } else {
                         verts = (partType === SsPartType.Joint) ? new Float32Array(10) /* dummy */ : mesh.vertices;
                         verts = this.playerLib.TransformVertsLocal(Player.GetVerts(cell, data, verts), data.index, frameNumber);
                     }
-                    // 頂点変形、パーツカラーのアトリビュートがある場合のみ行うようにしたい
                     if (data.flag1 & PART_FLAG.VERTEX_TRANSFORM) {
                         // 524288 verts [4]	//
-                        // 頂点変形の中心点を算出する
                         const vertexCoordinateLUx = verts[3 * 2 + 0];
                         const vertexCoordinateLUy = verts[3 * 2 + 1];
                         const vertexCoordinateLDx = verts[1 * 2 + 0];
@@ -599,6 +587,7 @@ export class SS6Player {
                         verts[0] = vec2[0];
                         verts[1] = vec2[1];
                     }
+
                     const px = verts[0];
                     const py = verts[1];
                     for (let j = 0; j < verts.length / 2; j++) {
@@ -607,19 +596,19 @@ export class SS6Player {
                     }
 
                     if (data.flag1 & PART_FLAG.U_MOVE || data.flag1 & PART_FLAG.V_MOVE || data.flag1 & PART_FLAG.U_SCALE || data.flag1 & PART_FLAG.V_SCALE || data.flag1 & PART_FLAG.UV_ROTATION) {
-                        // uv X/Y移動
+                        // move uvs
                         const u1 = cell.u1() + data.uv_move_X;
                         const u2 = cell.u2() + data.uv_move_X;
                         const v1 = cell.v1() + data.uv_move_Y;
                         const v2 = cell.v2() + data.uv_move_Y;
 
-                        // uv X/Yスケール
+                        // scale uvs
                         const cx = (u2 + u1) / 2;
                         const cy = (v2 + v1) / 2;
                         const uvw = ((u2 - u1) / 2) * data.uv_scale_X;
                         const uvh = ((v2 - v1) / 2) * data.uv_scale_Y;
 
-                        // UV回転
+                        // assign uvs
                         mesh.uvs[0] = cx;
                         mesh.uvs[1] = cy;
                         mesh.uvs[2] = cx - uvw;
@@ -634,16 +623,18 @@ export class SS6Player {
                         if (data.flag1 & PART_FLAG.UV_ROTATION) {
                             const rot = (data.uv_rotation * Math.PI) / 180;
                             for (let idx = 0; idx < 5; idx++) {
-                                const dx = mesh.uvs[idx * 2 + 0] - cx; // 中心からの距離(X)
-                                const dy = mesh.uvs[idx * 2 + 1] - cy; // 中心からの距離(Y)
+                                // the distance from central coordinate
+                                const dx = mesh.uvs[idx * 2 + 0] - cx;
+                                const dy = mesh.uvs[idx * 2 + 1] - cy;
 
                                 const cos = Math.cos(rot);
                                 const sin = Math.sin(rot);
 
-                                const tmpX = cos * dx - sin * dy; // 回転
+                                const tmpX = cos * dx - sin * dy;
                                 const tmpY = sin * dx + cos * dy;
 
-                                mesh.uvs[idx * 2 + 0] = cx + tmpX; // 元の座標にオフセットする
+                                // assign the coordinate (origin offset)
+                                mesh.uvs[idx * 2 + 0] = cx + tmpX;
                                 mesh.uvs[idx * 2 + 1] = cy + tmpY;
                             }
                         }
@@ -655,21 +646,19 @@ export class SS6Player {
                     mesh.visible = !data.f_hide;
 
                     /* TODO: MeshPart.alpha
-                    // 小西: 256指定と1.0指定が混在していたので統一
-                    let opacity = data.opacity / 255.0; // fdには継承後の不透明度が反映されているのでそのまま使用する
-                    // 小西: 256指定と1.0指定が混在していたので統一
+                    // the inherited opacity from the frame data
+                    let opacity = data.opacity / 255.0;
                     if (data.localopacity < 255) {
-                        // ローカル不透明度が使われている場合は255以下の値になるので、255以下の場合にローカル不透明度で上書き
+                        // overwrite with the local opacity
                         opacity = data.localopacity / 255.0;
                     }
                     mesh.alpha = opacity * this.parentAlpha; // 255*255
                     */
 
                     /* TODO: MeshPart.tint
-                    // 小西 - tintデータがあれば適用
                     if (data.tint) {
                         mesh.tint = data.tint;
-                        // パーツカラーのAを不透明度に乗算して処理する
+                        // multiply the alpha channel
                         const ca = ((data.partsColorARGB & 0xff000000) >>> 24) / 255;
                         mesh.alpha = mesh.alpha * ca;
                     }
@@ -685,7 +674,6 @@ export class SS6Player {
                 case SsPartType.Nulltype: {
                     const dummy = partObject instanceof BasePart ? partObject : null;
 
-                    // NULLパーツのOpacity/Transform設定
                     /* TODO: BasePart.alpha
                     const opacity = this.playerLib.InheritOpacity(1.0, data.index, frameNumber);
                     dummy.alpha = (opacity * data.localopacity) / 255.0;
@@ -710,20 +698,20 @@ export class SS6Player {
     }
 
     /**
-     * アニメーション再生を位置（フレーム）を設定する
-     * @param {number} frame 
+     * Set the current frame
+     * @param {number} frame - The current frame
      */
-    SetFrame(frame) {
+    setFrame(frame) {
         this._currentFrame = frame;
     }
 
     /**
-     * アニメーション再生設定
-     * @param {number} _startframe - 開始フレーム番号（マイナス設定でデフォルト値を変更しない）
-     * @param {number} _endframe - 終了フレーム番号（マイナス設定でデフォルト値を変更しない）
-     * @param {number} _loops - ループ回数（ゼロもしくはマイナス設定で無限ループ）
+     * Set the animation
+     * @param {number} _startframe - The start frame
+     * @param {number} _endframe - The end frame
+     * @param {number} _loops - The loop counts
      */
-    SetAnimationSection(_startframe = -1, _endframe = -1, _loops = -1) {
+    setAnimationSection(_startframe = -1, _endframe = -1, _loops = -1) {
         if (_startframe >= 0 && _startframe < this.playerLib.animationData.totalFrames()) {
             this._startFrame = _startframe;
         }
@@ -735,17 +723,16 @@ export class SS6Player {
         } else {
             this._loops = -1;
         }
-        // 再生方向にあわせて開始フレーム設定（順方向ならstartFrame,逆方法ならendFrame）
         this._currentFrame = this.playDirection > 0 ? this._startFrame : this._endFrame;
     }
 
     /**
-     * セルをインスタンスで作成
-     * @param {String} refname 参照アニメ名
-     * @param {number=} refStart
-     * @return {SS6Player} - インスタンス
+     * Create the instance of {@link SS6Player}
+     * @param {String} refname - {@link animePackName} + "/" + {@link animeName}
+     * @param {number=} refStart - The current frame
+     * @return {SS6Player}
      */
-    MakeCellPlayer(refname, refStart) {
+    makeCellPlayer(refname, refStart) {
         const split = refname.split('/');
         const ssp = new SS6Player(this.ss6project);
         ssp.setup(split[0], split[1]);
@@ -755,8 +742,8 @@ export class SS6Player {
     }
 
     /**
-     * アニメーション再生を開始する
-     * @param {number} frameNo
+     * Start playing
+     * @param {number} frameNo - The current frame
      */
     play(frameNo) {
         this._isPlaying = true;
@@ -787,21 +774,12 @@ export class SS6Player {
     }
 
     /**
-     * 名前を指定してパーツの再生するインスタンスアニメを変更します。
-     * 指定したパーツがインスタンスパーツでない場合、falseを返します.
-     * インスタンスパーツ名はディフォルトでは「ssae名:モーション名」とつけられています。
-     * 再生するアニメの名前は アニメパック名 と アニメ名 で指定してください。
-     * 現在再生しているアニメを指定することは入れ子となり無限ループとなるためできません。
-     * 
-     * 変更するアニメーションは同じ ssfb に含まれる必要があります。
-     * インスタンスパーツが再生するアニメを変更します
-     * 
-     * インスタンスキーは
-     * @param {string} partName SS上のパーツ名
-     * @param {string} animePackName 参照するアニメパック名
-     * @param {string} animeName 参照するアニメ名
-     * @param {boolean} overWrite インスタンスキーの上書きフラグ
-     * @param {SS6PlayerInstanceKeyParam} keyParam インスタンスキー
+     * Change the animation of instance {@link SS6Player}
+     * @param {string} partName - The name of instance
+     * @param {string} animePackName - The name of animePack(SSAE)
+     * @param {string} animeName - The name of animation
+     * @param {boolean} overWrite - If overwrite the instance attribute
+     * @param {SS6PlayerInstanceKeyParam} keyParam
      */
     changeInstanceAnime(partName, animePackName, animeName, overWrite, keyParam) {
         let rc = false;
@@ -820,9 +798,9 @@ export class SS6Player {
                         let keyParamAsSubstitute = keyParam ? keyParam : null;
                         if (keyParamAsSubstitute === null) {
                             keyParamAsSubstitute = keyParam;
-                            instance = this.MakeCellPlayer(animePackName + '/' + animeName, keyParam.refStartframe);
+                            instance = this.makeCellPlayer(animePackName + '/' + animeName, keyParam.refStartframe);
                         } else {
-                            instance = this.MakeCellPlayer(animePackName + '/' + animeName);
+                            instance = this.makeCellPlayer(animePackName + '/' + animeName);
                             keyParamAsSubstitute = new SS6PlayerInstanceKeyParam();
                             keyParamAsSubstitute.refStartframe = instance.startFrame;
                             keyParamAsSubstitute.refEndframe = instance.endFrame;
@@ -841,11 +819,11 @@ export class SS6Player {
     }
 
     /**
-     * 矩形セルをメッシュ（5verts4Tri）で作成
-     * @param {number} id - セルID
-     * @returns {MeshPart} - メッシュ
+     * Create the instance of {@link MeshPart} (5verts4Tri)
+     * @param {number} id
+     * @returns {MeshPart}
      */
-    MakeCellMesh(id) {
+    makeCellMesh(id) {
         const cell = this.playerLib.fbObj.cells(id);
         const u1 = cell.u1();
         const u2 = cell.u2();
@@ -862,13 +840,13 @@ export class SS6Player {
     }
 
     /**
-     * メッシュセルからメッシュを作成
-     * @param {number} partID - パーツID
-     * @param {number} cellID - セルID
-     * @param {number} origCellID - オリジナルのセルID
+     * Create the instance of {@link MeshPart} from the other
+     * @param {number} partID
+     * @param {number} cellID 
+     * @param {number} origCellID
      * @returns {MeshPart}
      */
-    MakeMeshCellMesh(partID, cellID, origCellID) {
+    makeMeshCellMesh(partID, cellID, origCellID) {
         const meshsDataUV = this.playerLib.animationData.meshsDataUv(partID);
         const uvLength = meshsDataUV.uvLength();
 
@@ -879,7 +857,7 @@ export class SS6Player {
             const diff_u = (cellID === origCellID) ? 0.0 : ((cell.u1() + cell.u2()) / 2) - ((origCell.u1() + origCell.u2()) / 2);
             const diff_v = (cellID === origCellID) ? 0.0 : ((cell.v1() + cell.v2()) / 2) - ((origCell.v1() + origCell.v2()) / 2);
 
-            // 先頭の2データはヘッダになる
+            // the header data length is 2
             const uvs = new Float32Array(uvLength - 2);
             const meshNum = meshsDataUV.uv(1);
 
@@ -890,13 +868,13 @@ export class SS6Player {
             const meshsDataIndices = this.playerLib.animationData.meshsDataIndices(partID);
             const indicesLength = meshsDataIndices.indicesLength();
 
-            // 先頭の1データはヘッダになる
+            // the header data length is 1
             const indices = new Uint32Array(indicesLength - 1);
             for (let idx = 1; idx < indicesLength; idx++) {
                 indices[idx - 1] = meshsDataIndices.indices(idx);
             }
 
-            const verts = new Float32Array(meshNum * 2); // Zは必要ない？
+            const verts = new Float32Array(meshNum * 2);
 
             return createInstance(MeshPart, verts, uvs, indices, cell.cellMap().name());
         }
